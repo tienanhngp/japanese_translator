@@ -54,10 +54,8 @@ python app.py
 
 ## Screenshot
 
-```
 <img width="2556" height="1381" alt="image" src="https://github.com/user-attachments/assets/1b03912f-ab7d-4ad9-93df-9c44d3f3ea93" />
 
-```
 
 ## Keyboard Shortcuts
 
