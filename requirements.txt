@@ -2,3 +2,4 @@ manga-ocr
 deep-translator
 Pillow
 customtkinter
+transformers

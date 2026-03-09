@@ -23,6 +23,7 @@ from src.config import (
     STATUS_LOADING, STATUS_READY, STATUS_EXTRACTING,
     STATUS_TRANSLATING, STATUS_DONE,
     STATUS_OCR_FAIL, STATUS_TRANSLATE_FAIL, STATUS_MODEL_ERROR,
+    DEFAULT_TRANSLATOR,
 )
 from src.services import OCRService, TranslationService, fit_image, save_temp_image
 from src.snip_overlay import SnipOverlay
@@ -49,7 +50,7 @@ class MangaTranslateApp(ctk.CTk):
 
         # Services
         self._ocr = OCRService()
-        self._translator = TranslationService()
+        self._translator = TranslationService(backend=DEFAULT_TRANSLATOR)
 
         # State
         self._current_image_path: str | None = None
@@ -66,6 +67,20 @@ class MangaTranslateApp(ctk.CTk):
     def _bind_hotkeys(self) -> None:
         self.bind_all("<Control-Shift-x>", lambda _: self._snip_screen())
         self.bind_all("<Control-Shift-X>", lambda _: self._snip_screen())
+
+    # ── Translator Backend ───────────────────────────────────────────────
+    def _on_backend_changed(self, choice: str) -> None:
+        """Called when the user picks a different translator from the dropdown."""
+        backend = "sugoi" if "Sugoi" in choice else "google"
+        try:
+            self._translator.set_backend(backend)
+            label = "🔌 Sugoi (Offline)" if backend == "sugoi" else "🌐 Google Translate"
+            self._set_status((f"{label} active", "green"))
+        except Exception as exc:
+            # Revert dropdown on failure
+            self._backend_var.set("Google Translate")
+            self._translator.set_backend("google")
+            messagebox.showerror("Sugoi Error", str(exc))
 
     # ══════════════════════════════════════════════════════════════════════
     #  UI Construction
@@ -104,6 +119,19 @@ class MangaTranslateApp(ctk.CTk):
             toolbar, text="🗑 Clear", command=self._clear, width=80,
         )
         self._btn_clear.pack(side="left", padx=5, pady=5)
+
+        # ── Translator backend selector ──────────────────────────────────
+        self._backend_var = ctk.StringVar(
+            value="Google Translate" if DEFAULT_TRANSLATOR == "google" else "Sugoi (Offline)"
+        )
+        self._backend_menu = ctk.CTkOptionMenu(
+            toolbar,
+            values=["Google Translate", "Sugoi (Offline)"],
+            variable=self._backend_var,
+            command=self._on_backend_changed,
+            width=160,
+        )
+        self._backend_menu.pack(side="left", padx=10, pady=5)
 
         self._status = ctk.CTkLabel(toolbar, text=STATUS_LOADING[0], text_color=STATUS_LOADING[1])
         self._status.pack(side="right", padx=10, pady=5)

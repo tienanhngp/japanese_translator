@@ -30,6 +30,13 @@ MIN_SNIP_SIZE = 10  # pixels – ignore selections smaller than this
 SOURCE_LANG = "ja"
 TARGET_LANG = "en"
 
+# Translator backend: "google" or "sugoi"
+DEFAULT_TRANSLATOR = "google"
+
+# Hugging Face model ID for Sugoi / Opus-MT offline translator.
+# Auto-downloaded and cached by transformers on first use.
+SUGOI_MODEL_NAME = "Helsinki-NLP/opus-mt-ja-en"
+
 # ── Files ────────────────────────────────────────────────────────────────
 SUPPORTED_IMAGE_TYPES = [
     ("Image files", "*.png *.jpg *.jpeg *.bmp *.webp *.tiff"),
