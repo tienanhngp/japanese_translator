@@ -12,8 +12,8 @@ import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from PIL import Image, ImageGrab
 
-from platform_utils import enable_dpi_awareness
-from config import (
+from src.platform_utils import enable_dpi_awareness
+from src.config import (
     APP_TITLE, WINDOW_SIZE, MIN_WIDTH, MIN_HEIGHT,
     APPEARANCE_MODE, COLOR_THEME,
     SNIP_BUTTON_COLOR, SNIP_BUTTON_HOVER, SNIP_HOTKEY_LABEL,
@@ -24,8 +24,8 @@ from config import (
     STATUS_TRANSLATING, STATUS_DONE,
     STATUS_OCR_FAIL, STATUS_TRANSLATE_FAIL, STATUS_MODEL_ERROR,
 )
-from services import OCRService, TranslationService, fit_image, save_temp_image
-from snip_overlay import SnipOverlay
+from src.services import OCRService, TranslationService, fit_image, save_temp_image
+from src.snip_overlay import SnipOverlay
 
 # Must be called before any Tk window is created
 enable_dpi_awareness()

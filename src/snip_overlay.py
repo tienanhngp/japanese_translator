@@ -10,7 +10,7 @@ from typing import Callable, Optional
 
 from PIL import Image, ImageTk, ImageGrab
 
-from config import (
+from src.config import (
     MIN_SNIP_SIZE,
     OVERLAY_TINT,
     SELECTION_OUTLINE,

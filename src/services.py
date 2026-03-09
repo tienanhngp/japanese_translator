@@ -15,7 +15,7 @@ from PIL import Image
 from manga_ocr import MangaOcr
 from deep_translator import GoogleTranslator
 
-from config import SOURCE_LANG, TARGET_LANG
+from src.config import SOURCE_LANG, TARGET_LANG
 
 
 # ── OCR Service ──────────────────────────────────────────────────────────

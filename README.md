@@ -34,7 +34,7 @@ pip install -r requirements.txt
 ## Usage
 
 ```bash
-python app.py
+python main.py
 ```
 
 ### Workflow
