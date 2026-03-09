@@ -1,4 +1,4 @@
-# Manga Translator
+<img width="2556" height="1381" alt="image" src="https://github.com/user-attachments/assets/1fccb29f-5640-4556-8a93-e4462c1563f6" /><img width="2556" height="1381" alt="image" src="https://github.com/user-attachments/assets/1b03912f-ab7d-4ad9-93df-9c44d3f3ea93" /># Manga Translator
 
 A desktop app with a built-in **screen snipping tool** (like Snip & Sketch) that captures Japanese text from manga, runs OCR with **manga-ocr**, and translates it to English in real time.
 
@@ -55,20 +55,8 @@ python app.py
 ## Screenshot
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│ [✂ Snip Screen] [Open Image] [Paste] [Extract & Translate]  ✅ │
-├───────────────────────────┬──────────────────────────────────────┤
-│                           │ Extracted Japanese Text              │
-│                           │ ┌──────────────────────────────────┐ │
-│       Snipped Region      │ │ お兄ちゃんどこに行くの?         │ │
-│         Preview           │ └──────────────────────────────────┘ │
-│                           │ English Translation                  │
-│                           │ ┌──────────────────────────────────┐ │
-│                           │ │ Where are you going, bro?        │ │
-│                           │ └──────────────────────────────────┘ │
-├───────────────────────────┴──────────────────────────────────────┤
-│ Manual input: [____________________________] [Translate]         │
-└──────────────────────────────────────────────────────────────────┘
+<img width="1278" height="691" alt="screen_shot" src="https://github.com/user-attachments/assets/3aaea345-2278-4372-a993-fd5adcb7b29a" />
+
 ```
 
 ## Keyboard Shortcuts
