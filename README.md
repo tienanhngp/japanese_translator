@@ -1,14 +1,16 @@
 # Manga Translator
 
-A desktop app that extracts Japanese text from manga images using **manga-ocr** and translates it to English.
+A desktop app with a built-in **screen snipping tool** (like Snip & Sketch) that captures Japanese text from manga, runs OCR with **manga-ocr**, and translates it to English in real time.
 
 ## Features
 
+- **✂ Screen Snip** – Select any region on your screen to instantly OCR & translate (like Snip & Sketch)
+- **Hotkey support** – Press **Ctrl+Shift+X** to snip from anywhere
 - **OCR extraction** – Uses [manga-ocr](https://github.com/kha-white/manga-ocr) to read Japanese text from manga panels
 - **Translation** – Translates extracted Japanese text to English via Google Translate
 - **Image loading** – Open images from file or paste from clipboard
 - **Manual input** – Type any Japanese text and get an instant translation
-- **Modern UI** – Built with [customtkinter](https://github.com/TomSchimansky/CustomTkinter)
+- **Modern UI** – Dark-themed GUI built with [customtkinter](https://github.com/TomSchimansky/CustomTkinter)
 
 ## Requirements
 
@@ -35,25 +37,44 @@ pip install -r requirements.txt
 python app.py
 ```
 
-1. Click **Open Image** to load a manga panel or screenshot
-2. Click **Extract & Translate** to run OCR and translate
-3. Or type Japanese text in the bottom bar and press **Enter**
+### Workflow
+
+1. **Snip Screen** – Click **✂ Snip Screen** or press **Ctrl+Shift+X**
+2. The app hides and a fullscreen overlay appears with a crosshair cursor
+3. **Drag to select** the region containing Japanese text
+4. The app automatically runs OCR and shows the translation — no extra clicks needed
+5. Press **ESC** to cancel the snip
+
+### Other options
+
+- **Open Image** – Load a manga panel from a file
+- **Paste** – Paste an image from the clipboard
+- **Extract & Translate** – Manually trigger OCR on the loaded image
+- **Manual input** – Type Japanese text in the bottom bar and press **Enter**
 
 ## Screenshot
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│ [Open Image] [Paste] [Extract & Translate] [Clear]  ✅  │
-├──────────────────────────┬───────────────────────────────┤
-│                          │ Extracted Japanese Text       │
-│                          │ ┌───────────────────────────┐ │
-│       Image Preview      │ │ お兄ちゃんどこに行くの?  │ │
-│                          │ └───────────────────────────┘ │
-│                          │ English Translation           │
-│                          │ ┌───────────────────────────┐ │
-│                          │ │ Where are you going, bro? │ │
-│                          │ └───────────────────────────┘ │
-├──────────────────────────┴───────────────────────────────┤
-│ Manual input: [________________________] [Translate]     │
-└──────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│ [✂ Snip Screen] [Open Image] [Paste] [Extract & Translate]  ✅ │
+├───────────────────────────┬──────────────────────────────────────┤
+│                           │ Extracted Japanese Text              │
+│                           │ ┌──────────────────────────────────┐ │
+│       Snipped Region      │ │ お兄ちゃんどこに行くの?         │ │
+│         Preview           │ └──────────────────────────────────┘ │
+│                           │ English Translation                  │
+│                           │ ┌──────────────────────────────────┐ │
+│                           │ │ Where are you going, bro?        │ │
+│                           │ └──────────────────────────────────┘ │
+├───────────────────────────┴──────────────────────────────────────┤
+│ Manual input: [____________________________] [Translate]         │
+└──────────────────────────────────────────────────────────────────┘
 ```
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|---|---|
+| `Ctrl+Shift+X` | Snip a screen region |
+| `ESC` | Cancel snip |
+| `Enter` | Translate manual input |
