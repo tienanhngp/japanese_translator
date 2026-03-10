@@ -27,6 +27,7 @@ from src.config import (
     STATUS_SUGOI_LOADING, STATUS_SUGOI_READY,
     LIVE_BUTTON_COLOR, LIVE_BUTTON_HOVER, LIVE_HOTKEY_LABEL,
     STATUS_LIVE_ON, STATUS_LIVE_OFF,
+    TOOLBAR_HOTKEY_LABEL, TOOLBAR_BUTTON_COLOR, TOOLBAR_BUTTON_HOVER,
 )
 from src.services import OCRService, TranslationService, fit_image, save_temp_image
 from src.snip_overlay import SnipOverlay
@@ -59,6 +60,8 @@ class MangaTranslateApp(ctk.CTk):
         # State
         self._current_image_path: str | None = None
         self._photo_image = None  # prevent GC of CTkImage
+        self._toolbar_only = False  # toolbar-only mode flag
+        self._toolbar_window: ctk.CTkToplevel | None = None
 
         # Build & boot
         self._build_toolbar()
@@ -73,6 +76,8 @@ class MangaTranslateApp(ctk.CTk):
         self.bind_all("<Control-Shift-X>", lambda _: self._snip_screen())
         self.bind_all("<Control-Shift-l>", lambda _: self._toggle_live_mode())
         self.bind_all("<Control-Shift-L>", lambda _: self._toggle_live_mode())
+        self.bind_all("<Control-Shift-t>", lambda _: self._toggle_toolbar_only())
+        self.bind_all("<Control-Shift-T>", lambda _: self._toggle_toolbar_only())
 
     # ── Translator Backend ───────────────────────────────────────────────
     def _on_backend_changed(self, choice: str) -> None:
@@ -86,7 +91,6 @@ class MangaTranslateApp(ctk.CTk):
             self._btn_snip.configure(state="disabled")
             self._btn_open.configure(state="disabled")
             self._btn_paste.configure(state="disabled")
-            self._btn_live.configure(state="disabled")
             self._set_status(STATUS_SUGOI_LOADING)
 
             def _worker() -> None:
@@ -111,7 +115,6 @@ class MangaTranslateApp(ctk.CTk):
         self._btn_snip.configure(state="normal")
         self._btn_open.configure(state="normal")
         self._btn_paste.configure(state="normal")
-        self._btn_live.configure(state="normal")
         if self._current_image_path:
             self._btn_translate.configure(state="normal")
         self._set_status(STATUS_SUGOI_READY)
@@ -174,6 +177,16 @@ class MangaTranslateApp(ctk.CTk):
             hover_color=LIVE_BUTTON_HOVER,
         )
         self._btn_live.pack(side="left", padx=5, pady=5)
+
+        self._btn_toolbar_only = ctk.CTkButton(
+            toolbar,
+            text=f"🔲 Toolbar ({TOOLBAR_HOTKEY_LABEL})",
+            command=self._toggle_toolbar_only,
+            width=170,
+            fg_color=TOOLBAR_BUTTON_COLOR,
+            hover_color=TOOLBAR_BUTTON_HOVER,
+        )
+        self._btn_toolbar_only.pack(side="left", padx=5, pady=5)
 
         # ── Translator backend selector ──────────────────────────────────
         self._backend_var = ctk.StringVar(
@@ -239,6 +252,12 @@ class MangaTranslateApp(ctk.CTk):
     def _set_status(self, status: tuple[str, str]) -> None:
         """Update the status label.  *status* is a ``(text, color)`` tuple."""
         self._status.configure(text=status[0], text_color=status[1])
+        # Also update toolbar status if it exists
+        if self._toolbar_only and self._toolbar_window is not None:
+            try:
+                self._tb_status.configure(text=status[0], text_color=status[1])
+            except Exception:
+                pass
 
     # ══════════════════════════════════════════════════════════════════════
     #  OCR Model Loading
@@ -270,6 +289,9 @@ class MangaTranslateApp(ctk.CTk):
         if not self._ocr.is_ready:
             messagebox.showinfo("Not Ready", "OCR model is still loading, please wait.")
             return
+        if self._toolbar_only:
+            self._tb_snip_screen()
+            return
         self.withdraw()
         self.update()
         self.after(200, self._show_snip_overlay)
@@ -294,6 +316,9 @@ class MangaTranslateApp(ctk.CTk):
         if not self._ocr.is_ready:
             messagebox.showinfo("Not Ready", "OCR model is still loading, please wait.")
             return
+        if self._toolbar_only:
+            self._tb_toggle_live()
+            return
         self.withdraw()
         self.update()
         self.after(200, self._show_live_overlay)
@@ -302,9 +327,159 @@ class MangaTranslateApp(ctk.CTk):
         LiveOverlay(self, self._ocr, self._translator, self._on_live_done)
 
     def _on_live_done(self, _: None) -> None:
+        if self._toolbar_only and self._toolbar_window is not None:
+            self._toolbar_window.deiconify()
+            self._toolbar_window.lift()
+            self._tb_status.configure(
+                text=STATUS_LIVE_OFF[0], text_color=STATUS_LIVE_OFF[1]
+            )
+        else:
+            self.deiconify()
+            self.lift()
+            self._set_status(STATUS_LIVE_OFF)
+
+    # ══════════════════════════════════════════════════════════════════════
+    #  Toolbar-Only Mode
+    # ══════════════════════════════════════════════════════════════════════
+    def _toggle_toolbar_only(self) -> None:
+        """Switch between full window and compact floating toolbar."""
+        if self._toolbar_only:
+            self._close_toolbar_window()
+        else:
+            self._open_toolbar_window()
+
+    def _open_toolbar_window(self) -> None:
+        """Hide the main window and show a compact floating toolbar."""
+        self._toolbar_only = True
+        self.withdraw()
+
+        win = ctk.CTkToplevel(self)
+        self._toolbar_window = win
+        win.title("Manga Translator – Toolbar")
+        win.attributes("-topmost", True)
+        win.resizable(False, False)
+        win.protocol("WM_DELETE_WINDOW", self._close_toolbar_window)
+
+        frame = ctk.CTkFrame(win, corner_radius=8)
+        frame.pack(fill="both", expand=True, padx=6, pady=6)
+
+        # ── Snip button ──────────────────────────────────────────────────
+        ctk.CTkButton(
+            frame,
+            text=f"✂ Snip ({SNIP_HOTKEY_LABEL})",
+            command=self._tb_snip_screen,
+            width=150,
+            fg_color=SNIP_BUTTON_COLOR,
+            hover_color=SNIP_BUTTON_HOVER,
+        ).pack(side="left", padx=4, pady=6)
+
+        # ── Live button ──────────────────────────────────────────────────
+        ctk.CTkButton(
+            frame,
+            text=f"🔍 Live ({LIVE_HOTKEY_LABEL})",
+            command=self._tb_toggle_live,
+            width=150,
+            fg_color=LIVE_BUTTON_COLOR,
+            hover_color=LIVE_BUTTON_HOVER,
+        ).pack(side="left", padx=4, pady=6)
+
+        # ── Backend selector ─────────────────────────────────────────────
+        self._tb_backend_var = ctk.StringVar(value=self._backend_var.get())
+        self._tb_backend_menu = ctk.CTkOptionMenu(
+            frame,
+            values=["Google Translate", "Sugoi (Offline)"],
+            variable=self._tb_backend_var,
+            command=self._on_backend_changed,
+            width=150,
+        )
+        self._tb_backend_menu.pack(side="left", padx=4, pady=6)
+
+        # ── Status label ─────────────────────────────────────────────────
+        current_status = self._status.cget("text")
+        current_color = self._status.cget("text_color")
+        self._tb_status = ctk.CTkLabel(
+            frame, text=current_status, text_color=current_color,
+        )
+        self._tb_status.pack(side="left", padx=8, pady=6)
+
+        # ── Expand (back to full window) ─────────────────────────────────
+        ctk.CTkButton(
+            frame,
+            text="⬜ Expand",
+            command=self._close_toolbar_window,
+            width=80,
+            fg_color="gray40",
+            hover_color="gray50",
+        ).pack(side="right", padx=4, pady=6)
+
+        # Position at top-center of screen
+        win.update_idletasks()
+        sw = win.winfo_screenwidth()
+        ww = win.winfo_reqwidth()
+        win.geometry(f"+{(sw - ww) // 2}+0")
+
+        # Bind hotkeys on the toolbar window too
+        win.bind_all("<Control-Shift-x>", lambda _: self._tb_snip_screen())
+        win.bind_all("<Control-Shift-X>", lambda _: self._tb_snip_screen())
+        win.bind_all("<Control-Shift-l>", lambda _: self._tb_toggle_live())
+        win.bind_all("<Control-Shift-L>", lambda _: self._tb_toggle_live())
+        win.bind_all("<Control-Shift-t>", lambda _: self._close_toolbar_window())
+        win.bind_all("<Control-Shift-T>", lambda _: self._close_toolbar_window())
+
+    def _close_toolbar_window(self) -> None:
+        """Close the floating toolbar and restore the main window."""
+        self._toolbar_only = False
+        if self._toolbar_window is not None:
+            self._toolbar_window.destroy()
+            self._toolbar_window = None
         self.deiconify()
         self.lift()
-        self._set_status(STATUS_LIVE_OFF)
+        self._bind_hotkeys()  # rebind hotkeys to the main window
+
+    def _tb_snip_screen(self) -> None:
+        """Snip screen from the toolbar-only mode."""
+        if not self._ocr.is_ready:
+            from tkinter import messagebox
+            messagebox.showinfo("Not Ready", "OCR model is still loading, please wait.")
+            return
+        if self._toolbar_window:
+            self._toolbar_window.withdraw()
+        self.update()
+        self.after(200, self._show_snip_overlay_toolbar)
+
+    def _show_snip_overlay_toolbar(self) -> None:
+        SnipOverlay(self, self._on_snip_done_toolbar)
+
+    def _on_snip_done_toolbar(self, region: Image.Image | None) -> None:
+        """Handle snip result in toolbar mode — show result then restore toolbar."""
+        if self._toolbar_window:
+            self._toolbar_window.deiconify()
+            self._toolbar_window.lift()
+        if region is None:
+            return
+        path = save_temp_image(region, "_manga_snip.png")
+        # In toolbar mode, show the full window briefly for results
+        self._display_image(region, path)
+        self.deiconify()
+        self.lift()
+        self._extract_and_translate()
+
+    def _tb_toggle_live(self) -> None:
+        """Start live overlay from toolbar mode."""
+        if not self._ocr.is_ready:
+            from tkinter import messagebox
+            messagebox.showinfo("Not Ready", "OCR model is still loading, please wait.")
+            return
+        if self._toolbar_window:
+            self._toolbar_window.withdraw()
+        self.update()
+        self.after(200, self._show_live_overlay)
+
+    def _tb_set_status(self, status: tuple[str, str]) -> None:
+        """Update status on both the main status label and toolbar status."""
+        self._status.configure(text=status[0], text_color=status[1])
+        if self._toolbar_window is not None and self._tb_status is not None:
+            self._tb_status.configure(text=status[0], text_color=status[1])
 
     # ══════════════════════════════════════════════════════════════════════
     #  Image Loading
@@ -429,5 +604,8 @@ class MangaTranslateApp(ctk.CTk):
 #  Entry Point
 # ══════════════════════════════════════════════════════════════════════════
 if __name__ == "__main__":
+    import sys
     app = MangaTranslateApp()
+    if "--toolbar" in sys.argv:
+        app.after(500, app._toggle_toolbar_only)
     app.mainloop()

@@ -4,8 +4,8 @@ Application-wide constants and configuration.
 
 # ── Window ────────────────────────────────────────────────────────────────
 APP_TITLE = "Manga Translator"
-WINDOW_SIZE = "1150x750"
-MIN_WIDTH = 1150
+WINDOW_SIZE = "1500x750"
+MIN_WIDTH = 1340
 MIN_HEIGHT = 750
 
 # ── Appearance ────────────────────────────────────────────────────────────
@@ -74,6 +74,11 @@ LIVE_SCROLL_SPEED = 3                  # scroll-wheel units per tick
 LIVE_BUTTON_COLOR = "#6c5ce7"
 LIVE_BUTTON_HOVER = "#5a4bd1"
 LIVE_HOTKEY_LABEL = "Ctrl+Shift+L"
+
+# ── Toolbar-Only Mode ────────────────────────────────────────────────────
+TOOLBAR_HOTKEY_LABEL = "Ctrl+Shift+T"
+TOOLBAR_BUTTON_COLOR = "#00b894"
+TOOLBAR_BUTTON_HOVER = "#00a381"
 
 # ── Status Messages for Live Mode ────────────────────────────────────────
 STATUS_LIVE_ON = ("🔍 Live Translate active", "cyan")
