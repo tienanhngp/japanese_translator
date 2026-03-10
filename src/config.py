@@ -55,6 +55,8 @@ STATUS_DONE = ("✅ Done", "green")
 STATUS_OCR_FAIL = ("❌ OCR failed", "red")
 STATUS_TRANSLATE_FAIL = ("❌ Translation failed", "red")
 STATUS_MODEL_ERROR = ("❌ Model error", "red")
+STATUS_SUGOI_LOADING = ("⏳ Loading Sugoi model…", "orange")
+STATUS_SUGOI_READY = ("🔌 Sugoi (Offline) active", "green")
 
 PLACEHOLDER_TEXT = (
     "No image loaded\n\n"

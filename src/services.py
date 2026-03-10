@@ -71,6 +71,11 @@ class TranslationService:
     def backend(self) -> TranslatorBackend:
         return self._backend
 
+    @property
+    def is_sugoi_loaded(self) -> bool:
+        """True once the Sugoi model has been loaded into memory."""
+        return self._sugoi_model is not None
+
     def set_backend(self, backend: TranslatorBackend) -> None:
         """Switch translator backend. Loads Sugoi model on first switch."""
         if backend == "sugoi" and self._sugoi_model is None:

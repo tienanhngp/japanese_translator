@@ -24,6 +24,7 @@ from src.config import (
     STATUS_TRANSLATING, STATUS_DONE,
     STATUS_OCR_FAIL, STATUS_TRANSLATE_FAIL, STATUS_MODEL_ERROR,
     DEFAULT_TRANSLATOR,
+    STATUS_SUGOI_LOADING, STATUS_SUGOI_READY,
 )
 from src.services import OCRService, TranslationService, fit_image, save_temp_image
 from src.snip_overlay import SnipOverlay
@@ -72,15 +73,52 @@ class MangaTranslateApp(ctk.CTk):
     def _on_backend_changed(self, choice: str) -> None:
         """Called when the user picks a different translator from the dropdown."""
         backend = "sugoi" if "Sugoi" in choice else "google"
-        try:
+
+        if backend == "sugoi" and not self._translator.is_sugoi_loaded:
+            # Load in background so the UI stays responsive
+            self._backend_menu.configure(state="disabled")
+            self._btn_translate.configure(state="disabled")
+            self._btn_snip.configure(state="disabled")
+            self._btn_open.configure(state="disabled")
+            self._btn_paste.configure(state="disabled")
+            self._set_status(STATUS_SUGOI_LOADING)
+
+            def _worker() -> None:
+                try:
+                    self._translator.set_backend(backend)
+                    self.after(0, self._on_sugoi_loaded)
+                except Exception as exc:
+                    msg = str(exc)
+                    self.after(0, lambda: self._on_sugoi_error(msg))
+
+            threading.Thread(target=_worker, daemon=True).start()
+        else:
             self._translator.set_backend(backend)
-            label = "🔌 Sugoi (Offline)" if backend == "sugoi" else "🌐 Google Translate"
-            self._set_status((f"{label} active", "green"))
-        except Exception as exc:
-            # Revert dropdown on failure
-            self._backend_var.set("Google Translate")
-            self._translator.set_backend("google")
-            messagebox.showerror("Sugoi Error", str(exc))
+            if backend == "sugoi":
+                self._set_status(STATUS_SUGOI_READY)
+            else:
+                self._set_status(STATUS_READY)
+
+    def _on_sugoi_loaded(self) -> None:
+        """Re-enable UI after the Sugoi model finishes loading."""
+        self._backend_menu.configure(state="normal")
+        self._btn_snip.configure(state="normal")
+        self._btn_open.configure(state="normal")
+        self._btn_paste.configure(state="normal")
+        if self._current_image_path:
+            self._btn_translate.configure(state="normal")
+        self._set_status(STATUS_SUGOI_READY)
+
+    def _on_sugoi_error(self, err: str) -> None:
+        """Revert to Google Translate when Sugoi fails to load."""
+        self._backend_var.set("Google Translate")
+        self._translator.set_backend("google")
+        self._backend_menu.configure(state="normal")
+        self._btn_snip.configure(state="normal")
+        self._btn_open.configure(state="normal")
+        self._btn_paste.configure(state="normal")
+        self._set_status(STATUS_READY)
+        messagebox.showerror("Sugoi Error", err)
 
     # ══════════════════════════════════════════════════════════════════════
     #  UI Construction
