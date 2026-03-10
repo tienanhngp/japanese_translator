@@ -25,9 +25,12 @@ from src.config import (
     STATUS_OCR_FAIL, STATUS_TRANSLATE_FAIL, STATUS_MODEL_ERROR,
     DEFAULT_TRANSLATOR,
     STATUS_SUGOI_LOADING, STATUS_SUGOI_READY,
+    LIVE_BUTTON_COLOR, LIVE_BUTTON_HOVER, LIVE_HOTKEY_LABEL,
+    STATUS_LIVE_ON, STATUS_LIVE_OFF,
 )
 from src.services import OCRService, TranslationService, fit_image, save_temp_image
 from src.snip_overlay import SnipOverlay
+from src.live_overlay import LiveOverlay
 
 # Must be called before any Tk window is created
 enable_dpi_awareness()
@@ -68,6 +71,8 @@ class MangaTranslateApp(ctk.CTk):
     def _bind_hotkeys(self) -> None:
         self.bind_all("<Control-Shift-x>", lambda _: self._snip_screen())
         self.bind_all("<Control-Shift-X>", lambda _: self._snip_screen())
+        self.bind_all("<Control-Shift-l>", lambda _: self._toggle_live_mode())
+        self.bind_all("<Control-Shift-L>", lambda _: self._toggle_live_mode())
 
     # ── Translator Backend ───────────────────────────────────────────────
     def _on_backend_changed(self, choice: str) -> None:
@@ -81,6 +86,7 @@ class MangaTranslateApp(ctk.CTk):
             self._btn_snip.configure(state="disabled")
             self._btn_open.configure(state="disabled")
             self._btn_paste.configure(state="disabled")
+            self._btn_live.configure(state="disabled")
             self._set_status(STATUS_SUGOI_LOADING)
 
             def _worker() -> None:
@@ -105,6 +111,7 @@ class MangaTranslateApp(ctk.CTk):
         self._btn_snip.configure(state="normal")
         self._btn_open.configure(state="normal")
         self._btn_paste.configure(state="normal")
+        self._btn_live.configure(state="normal")
         if self._current_image_path:
             self._btn_translate.configure(state="normal")
         self._set_status(STATUS_SUGOI_READY)
@@ -157,6 +164,16 @@ class MangaTranslateApp(ctk.CTk):
             toolbar, text="🗑 Clear", command=self._clear, width=80,
         )
         self._btn_clear.pack(side="left", padx=5, pady=5)
+
+        self._btn_live = ctk.CTkButton(
+            toolbar,
+            text=f"🔍 Live ({LIVE_HOTKEY_LABEL})",
+            command=self._toggle_live_mode,
+            width=170,
+            fg_color=LIVE_BUTTON_COLOR,
+            hover_color=LIVE_BUTTON_HOVER,
+        )
+        self._btn_live.pack(side="left", padx=5, pady=5)
 
         # ── Translator backend selector ──────────────────────────────────
         self._backend_var = ctk.StringVar(
@@ -268,6 +285,26 @@ class MangaTranslateApp(ctk.CTk):
         path = save_temp_image(region, "_manga_snip.png")
         self._display_image(region, path)
         self._extract_and_translate()
+
+    # ══════════════════════════════════════════════════════════════════════
+    #  Live Translate Mode
+    # ══════════════════════════════════════════════════════════════════════
+    def _toggle_live_mode(self) -> None:
+        """Activate live hover-to-translate overlay."""
+        if not self._ocr.is_ready:
+            messagebox.showinfo("Not Ready", "OCR model is still loading, please wait.")
+            return
+        self.withdraw()
+        self.update()
+        self.after(200, self._show_live_overlay)
+
+    def _show_live_overlay(self) -> None:
+        LiveOverlay(self, self._ocr, self._translator, self._on_live_done)
+
+    def _on_live_done(self, _: None) -> None:
+        self.deiconify()
+        self.lift()
+        self._set_status(STATUS_LIVE_OFF)
 
     # ══════════════════════════════════════════════════════════════════════
     #  Image Loading

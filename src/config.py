@@ -63,3 +63,18 @@ PLACEHOLDER_TEXT = (
     "Click  ✂ Snip Screen  to capture a region\n"
     "or open / paste an image"
 )
+
+# ── Live Overlay Appearance ──────────────────────────────────────────────
+LIVE_TOOLTIP_BG = "#1a1a2e"            # tooltip background
+LIVE_TOOLTIP_FG = "#ffffff"            # tooltip text colour
+LIVE_TOOLTIP_FONT = ("Segoe UI", 13)
+LIVE_TOOLTIP_OUTLINE = "#00aaff"       # tooltip border colour
+LIVE_SCROLL_SPEED = 3                  # scroll-wheel units per tick
+
+LIVE_BUTTON_COLOR = "#6c5ce7"
+LIVE_BUTTON_HOVER = "#5a4bd1"
+LIVE_HOTKEY_LABEL = "Ctrl+Shift+L"
+
+# ── Status Messages for Live Mode ────────────────────────────────────────
+STATUS_LIVE_ON = ("🔍 Live Translate active", "cyan")
+STATUS_LIVE_OFF = ("Live Translate ended", "white")
