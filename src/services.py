@@ -8,15 +8,19 @@ does not depend on any specific library directly.
 from __future__ import annotations
 
 import os
+import multiprocessing
 import tempfile
 from typing import Literal, Optional
 
 from PIL import Image
 from manga_ocr import MangaOcr
 from deep_translator import GoogleTranslator
-from transformers import MarianMTModel, MarianTokenizer
+from llama_cpp import Llama
 
-from src.config import SOURCE_LANG, TARGET_LANG, SUGOI_MODEL_NAME
+from src.config import (
+    SOURCE_LANG, TARGET_LANG,
+    SUGOI_REPO_ID, SUGOI_FILENAME, SUGOI_GPU_LAYERS,
+)
 
 TranslatorBackend = Literal["google", "sugoi"]
 
@@ -45,26 +49,23 @@ class OCRService:
 
 # ── Translation Service ─────────────────────────────────────────────────
 class TranslationService:
-    """Supports Google Translate (online) and Sugoi/Opus-MT (offline)."""
+    """Supports Google Translate (online) and Sugoi-14B-Ultra (offline)."""
 
     def __init__(
         self,
         source: str = SOURCE_LANG,
         target: str = TARGET_LANG,
         backend: TranslatorBackend = "google",
-        sugoi_model_name: str = SUGOI_MODEL_NAME,
     ) -> None:
         self._backend: TranslatorBackend = backend
         self._source = source
         self._target = target
-        self._sugoi_model_name = sugoi_model_name
 
         # Google – always created (lightweight)
         self._google = GoogleTranslator(source=source, target=target)
 
         # Sugoi – lazy-loaded on first use
-        self._sugoi_model: Optional[MarianMTModel] = None
-        self._sugoi_tokenizer: Optional[MarianTokenizer] = None
+        self._sugoi_llm: Optional[Llama] = None
 
     # ── public API ───────────────────────────────────────────────────────
     @property
@@ -73,7 +74,7 @@ class TranslationService:
 
     def set_backend(self, backend: TranslatorBackend) -> None:
         """Switch translator backend. Loads Sugoi model on first switch."""
-        if backend == "sugoi" and self._sugoi_model is None:
+        if backend == "sugoi" and self._sugoi_llm is None:
             self._load_sugoi()
         self._backend = backend
 
@@ -85,22 +86,55 @@ class TranslationService:
 
     # ── Sugoi internals ──────────────────────────────────────────────────
     def _load_sugoi(self) -> None:
-        """Load the Marian MT model from Hugging Face.
+        """Load the Sugoi-14B-Ultra GGUF model via llama-cpp-python.
 
-        The model is automatically downloaded and cached by the
-        transformers library on first use.
+        The model is automatically downloaded from Hugging Face and
+        cached locally on first use.
         """
-        print(f"⏬ Loading Sugoi model ({self._sugoi_model_name}) …")
-        self._sugoi_tokenizer = MarianTokenizer.from_pretrained(self._sugoi_model_name)
-        self._sugoi_model = MarianMTModel.from_pretrained(self._sugoi_model_name)
+        
+        print(f"⏬ Loading Sugoi model ({SUGOI_REPO_ID}) …")
+        cpu_count = multiprocessing.cpu_count()
+        print(f"   GPU layers: {SUGOI_GPU_LAYERS} | CPU threads: {cpu_count}")
+        self._sugoi_llm = Llama.from_pretrained(
+            repo_id=SUGOI_REPO_ID,
+            filename=SUGOI_FILENAME,
+            n_ctx=2048,
+            n_batch=512,
+            n_ubatch=512,
+            n_threads=cpu_count,
+            n_threads_batch=cpu_count,
+            n_gpu_layers=SUGOI_GPU_LAYERS,  # -1 = all layers on GPU
+            use_mmap=True,
+            use_mlock=False,
+            offload_kqv=True,   # offload KV cache to GPU as well
+            verbose=True,
+        )
         print("✅ Sugoi model ready.")
 
     def _translate_sugoi(self, text: str) -> str:
-        if self._sugoi_model is None or self._sugoi_tokenizer is None:
+        if self._sugoi_llm is None:
             self._load_sugoi()
-        inputs = self._sugoi_tokenizer(text, return_tensors="pt", padding=True)
-        translated = self._sugoi_model.generate(**inputs)
-        return self._sugoi_tokenizer.decode(translated[0], skip_special_tokens=True)
+
+        response = self._sugoi_llm.create_chat_completion(
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a professional Japanese to English translator "
+                        "specializing in manga and light novels. "
+                        "Translate the following Japanese text to natural English. "
+                        "Only output the translation, nothing else."
+                    ),
+                },
+                {"role": "user", "content": text},
+            ],
+            max_tokens=256,
+            temperature=0.1,
+            top_p=0.9,
+            top_k=40,
+            repeat_penalty=1.1,
+        )
+        return response["choices"][0]["message"]["content"].strip()
 
 
 # ── Image helpers ────────────────────────────────────────────────────────

@@ -3,3 +3,5 @@ deep-translator
 Pillow
 customtkinter
 transformers
+llama-cpp-python
+huggingface-hub
